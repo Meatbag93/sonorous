@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "sonorous"
+version = "0.1.0"
+description = ""
+authors = ["the_byte_bender <cccefg2@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pyenet = "^1.3.14"
+pyaudio = "^0.2.13"
+pyogg = "^0.6.14a1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
