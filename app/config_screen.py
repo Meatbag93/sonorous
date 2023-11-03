@@ -10,6 +10,7 @@ class ConfigScreen(wx.Frame):
         port: int | None = None,
         input_device: int | None = None,
         output_device: int | None = None,
+        name: str = "",
     ):
         super().__init__(parent, title="Configuration")
         self.pyaudio = pyaudio.PyAudio()
@@ -42,6 +43,12 @@ class ConfigScreen(wx.Frame):
         output_device_sizer.Add(self.output_device_ctrl, wx.EXPAND | wx.ALL)
         main_sizer.Add(output_device_sizer, wx.EXPAND | wx.LEFT)
         self.update_devices()
+        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        name_sizer.Add(wx.StaticText(panel, label="Name"))
+        self.name_ctrl = wx.TextCtrl(panel, value=name)
+        self.name_ctrl.SetMaxLength(32)
+        name_sizer.Add(self.name_ctrl)
+        main_sizer.Add(name_sizer)
         panel.SetSizer(main_sizer)
 
     @property
@@ -51,6 +58,10 @@ class ConfigScreen(wx.Frame):
     @property
     def port(self):
         return int(self.port_ctrl.GetValue())
+
+    @property
+    def name(self):
+        return self.name_ctrl.GetValue()
 
     def update_devices(self):
         host_api = self.pyaudio.get_default_host_api_info()
