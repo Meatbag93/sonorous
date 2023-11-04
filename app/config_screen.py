@@ -2,7 +2,7 @@ import pyaudio
 import wx
 
 
-class ConfigScreen(wx.Frame):
+class ConfigScreen(wx.Dialog):
     def __init__(
         self,
         parent: wx.Window | None = None,
@@ -16,40 +16,42 @@ class ConfigScreen(wx.Frame):
         self.pyaudio = pyaudio.PyAudio()
         self.input_device = input_device
         self.output_device = output_device
-        panel = wx.Panel(self)
-        main_sizer = wx.BoxSizer()
-        host_sizer = wx.BoxSizer(wx.VERTICAL)
-        host_sizer.Add(wx.StaticText(panel, label="Host"))
-        self.host_ctrl = wx.TextCtrl(panel, value=host or "")
-        host_sizer.Add(self.host_ctrl, wx.EXPAND | wx.ALL)
-        main_sizer.Add(host_sizer, wx.EXPAND | wx.LEFT)
-        port_sizer = wx.BoxSizer(wx.VERTICAL)
-        port_sizer.Add(wx.StaticText(panel, label="Port"))
+        tabs = wx.Treebook(self)
+        # Tab 1: Host, Port, and Name
+        tab1 = wx.Panel(tabs)
+        tabs.AddPage(tab1, "Connection")
+        tab1_sizer = wx.BoxSizer(wx.VERTICAL)
+        host_label = wx.StaticText(tab1, label="Host:")
+        self.host_ctrl = wx.TextCtrl(tab1, value=host or "")
+        port_label = wx.StaticText(tab1, label="Port:")
         self.port_ctrl = wx.SpinCtrl(
-            panel, value=str(port) if port is not None else "", max=65535
+            tab1, value=str(port) if port is not None else "", max=65535
         )
-        port_sizer.Add(self.port_ctrl, wx.EXPAND | wx.ALL)
-        main_sizer.Add(port_sizer, wx.EXPAND | wx.LEFT)
-        input_device_sizer = wx.BoxSizer(wx.VERTICAL)
-        input_device_sizer.Add(wx.StaticText(panel, label="Input device"))
-        self.input_device_ctrl = wx.Choice(panel)
-        self.input_device_ctrl.Bind(wx.EVT_CHOICE, self.on_input_device_change)
-        input_device_sizer.Add(self.input_device_ctrl, wx.EXPAND | wx.ALL)
-        main_sizer.Add(input_device_sizer, wx.EXPAND | wx.LEFT)
-        output_device_sizer = wx.BoxSizer(wx.VERTICAL)
-        output_device_sizer.Add(wx.StaticText(panel, label="output device"))
-        self.output_device_ctrl = wx.Choice(panel)
-        self.output_device_ctrl.Bind(wx.EVT_CHOICE, self.on_output_device_change)
-        output_device_sizer.Add(self.output_device_ctrl, wx.EXPAND | wx.ALL)
-        main_sizer.Add(output_device_sizer, wx.EXPAND | wx.LEFT)
-        self.update_devices()
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(wx.StaticText(panel, label="Name"))
-        self.name_ctrl = wx.TextCtrl(panel, value=name)
+        name_label = wx.StaticText(tab1, label="Name:")
+        self.name_ctrl = wx.TextCtrl(tab1, value=name)
         self.name_ctrl.SetMaxLength(32)
-        name_sizer.Add(self.name_ctrl)
-        main_sizer.Add(name_sizer)
-        panel.SetSizer(main_sizer)
+        tab1_sizer.Add(host_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
+        tab1_sizer.Add(self.host_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab1_sizer.Add(port_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
+        tab1_sizer.Add(self.port_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab1_sizer.Add(name_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
+        tab1_sizer.Add(self.name_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab1.SetSizer(tab1_sizer)
+        # Tab 2: Audio Devices
+        tab2 = wx.Panel(tabs)
+        tabs.AddPage(tab2, "Audio Devices")
+        tab2_sizer = wx.BoxSizer(wx.VERTICAL)
+        input_device_label = wx.StaticText(tab2, label="Input Device:")
+        self.input_device_ctrl = wx.Choice(tab2)
+        output_device_label = wx.StaticText(tab2, label="Output Device:")
+        self.output_device_ctrl = wx.Choice(tab2)
+        tab2_sizer.Add(input_device_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
+        tab2_sizer.Add(self.input_device_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab2_sizer.Add(output_device_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
+        tab2_sizer.Add(self.output_device_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab2.SetSizer(tab2_sizer)
+        self.update_devices()
+        tabs.SetSelection(0)  # Start with the first tab
 
     @property
     def host(self):
