@@ -2,7 +2,7 @@ import cyal
 import wx
 
 
-class ConfigScreen(wx.Dialog):
+class ConfigScreen(wx.Frame):
     def __init__(
         self,
         parent: wx.Window | None = None,
