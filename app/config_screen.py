@@ -1,4 +1,4 @@
-import pyaudio
+import cyal
 import wx
 
 
@@ -13,9 +13,9 @@ class ConfigScreen(wx.Dialog):
         name: str = "",
     ):
         super().__init__(parent, title="Configuration")
-        self.pyaudio = pyaudio.PyAudio()
-        self.input_device = input_device
-        self.output_device = output_device
+        self.capture = cyal.CaptureExtension()
+        self.input_device = input_device or self.capture.default_device
+        self.output_device = output_device or cyal.get_default_all_device_specifier()
         tabs = wx.Treebook(self)
         # Tab 1: Host, Port, and Name
         tab1 = wx.Panel(tabs)
@@ -66,41 +66,29 @@ class ConfigScreen(wx.Dialog):
         return self.name_ctrl.GetValue()
 
     def update_devices(self):
-        host_api = self.pyaudio.get_default_host_api_info()
-        if self.input_device is None:
-            self.input_device = host_api.get("defaultInputDevice", 0)
-        if self.output_device is None:
-            self.output_device = host_api.get("defaultOutputDevice", 0)
-        self.input_device_ctrl.Clear()
-        self.output_device_ctrl.Clear()
-        devices = [
-            self.pyaudio.get_device_info_by_host_api_device_index(host_api["index"], i)
-            for i in range(
-                host_api.get("deviceCount", 0),
-            )
-        ]
-        input_device_index = 0
-        output_device_index = 0
-        for index, device in enumerate(devices):
-            if device.get("maxInputChannels", 0) > 0:
-                self.input_device_ctrl.Append(device["name"], device)
-                if index == self.input_device:
-                    self.input_device_ctrl.SetSelection(input_device_index)
-                input_device_index += 1
-            elif device.get("maxOutputChannels", 0) > 0:
-                self.output_device_ctrl.Append(device["name"], device)
-                if index == self.output_device:
-                    self.output_device_ctrl.SetSelection(output_device_index)
-                output_device_index += 1
+        string_to_remove = "OpenAL Soft on " # Just so we get only the device name
+        input_devices = self.capture.devices
+        output_devices = cyal.get_all_device_specifiers()
+        for index, device in enumerate(input_devices):
+            id = device.encode()
+            self.input_device_ctrl.Append(device.replace(string_to_remove, "", 1), id)
+            if id == self.input_device: # It's the selected/default one, so we set selection to it
+                self.input_device_ctrl.SetSelection(index)
+        for index, device in enumerate(output_devices):
+            id = device
+            self.output_device_ctrl.Append(device.replace(string_to_remove, "", 1), id) # For output devices we don't need to encode their names
+            if id == self.output_device: # It's the selected/default one, so we set selection to it
+                self.output_device_ctrl.SetSelection(index)
+
 
     def on_input_device_change(self, event):
         device = self.input_device_ctrl.GetClientData(
             self.input_device_ctrl.GetSelection()
         )
-        self.input_device = device["index"]
+        self.input_device = device
 
     def on_output_device_change(self, event):
         device = self.output_device_ctrl.GetClientData(
             self.output_device_ctrl.GetSelection()
         )
-        self.output_device = device["index"]
+        self.output_device = device
