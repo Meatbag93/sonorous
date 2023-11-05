@@ -1,34 +1,28 @@
 import cyal
 import wx
+from . import config
 
 
 class ConfigScreen(wx.Frame):
     def __init__(
         self,
         parent: wx.Window | None = None,
-        host: str | None = None,
-        port: int | None = None,
-        input_device: int | None = None,
-        output_device: int | None = None,
-        name: str = "",
+        configuration: config.AppConfig | None = None,
     ):
         super().__init__(parent, title="Configuration")
-        self.capture = cyal.CaptureExtension()
-        self.input_device = input_device or self.capture.default_device
-        self.output_device = output_device or cyal.get_default_all_device_specifier()
+        self.config = configuration or config.AppConfig()
+        self.capture = self.config.capture
         tabs = wx.Treebook(self)
         # Tab 1: Host, Port, and Name
         tab1 = wx.Panel(tabs)
         tabs.AddPage(tab1, "Connection")
         tab1_sizer = wx.BoxSizer(wx.VERTICAL)
         host_label = wx.StaticText(tab1, label="Host:")
-        self.host_ctrl = wx.TextCtrl(tab1, value=host or "")
+        self.host_ctrl = wx.TextCtrl(tab1, value=self.config.host)
         port_label = wx.StaticText(tab1, label="Port:")
-        self.port_ctrl = wx.SpinCtrl(
-            tab1, value=str(port) if port is not None else "", max=65535
-        )
+        self.port_ctrl = wx.SpinCtrl(tab1, value=str(self.config.port), max=65535)
         name_label = wx.StaticText(tab1, label="Name:")
-        self.name_ctrl = wx.TextCtrl(tab1, value=name)
+        self.name_ctrl = wx.TextCtrl(tab1, value=self.config.name)
         self.name_ctrl.SetMaxLength(32)
         tab1_sizer.Add(host_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
         tab1_sizer.Add(self.host_ctrl, 1, wx.EXPAND | wx.ALL, 10)
@@ -55,42 +49,35 @@ class ConfigScreen(wx.Frame):
         self.update_devices()
         tabs.SetSelection(0)  # Start with the first tab
 
-    @property
-    def host(self):
-        return self.host_ctrl.GetValue()
-
-    @property
-    def port(self):
-        return int(self.port_ctrl.GetValue())
-
-    @property
-    def name(self):
-        return self.name_ctrl.GetValue()
-
     def update_devices(self):
-        string_to_remove = "OpenAL Soft on " # Just so we get only the device name
+        string_to_remove = "OpenAL Soft on "  # Just so we get only the device name
         input_devices = self.capture.devices
         output_devices = cyal.get_all_device_specifiers()
         for index, device in enumerate(input_devices):
             id = device.encode()
             self.input_device_ctrl.Append(device.replace(string_to_remove, "", 1), id)
-            if id == self.input_device: # It's the selected/default one, so we set selection to it
+            if (
+                id == self.config.input_device
+            ):  # It's the selected/default one, so we set selection to it
                 self.input_device_ctrl.SetSelection(index)
         for index, device in enumerate(output_devices):
             id = device
-            self.output_device_ctrl.Append(device.replace(string_to_remove, "", 1), id) # For output devices we don't need to encode their names
-            if id == self.output_device: # It's the selected/default one, so we set selection to it
+            self.output_device_ctrl.Append(
+                device.replace(string_to_remove, "", 1), id
+            )  # For output devices we don't need to encode their names
+            if (
+                id == self.config.output_device
+            ):  # It's the selected/default one, so we set selection to it
                 self.output_device_ctrl.SetSelection(index)
-
 
     def on_input_device_change(self, event):
         device = self.input_device_ctrl.GetClientData(
             self.input_device_ctrl.GetSelection()
         )
-        self.input_device = device
+        self.config.input_device = device
 
     def on_output_device_change(self, event):
         device = self.output_device_ctrl.GetClientData(
             self.output_device_ctrl.GetSelection()
         )
-        self.output_device = device
+        self.config.output_device = device
