@@ -213,16 +213,19 @@ files = [
 Cython = ">=0,<1"
 
 [[package]]
-name = "pyogg"
-version = "0.6.14a1"
+name = "PyOgg"
+version = "0.7"
 description = "Xiph.org's Ogg Vorbis, Opus and FLAC for Python"
 optional = false
 python-versions = "*"
-files = [
-    {file = "PyOgg-0.6.14a1-py2.py3-none-win32.whl", hash = "sha256:794db340fb5833afb4f493b40f91e3e0f594606fd4b31aea0ebf5be2de9da964"},
-    {file = "PyOgg-0.6.14a1-py2.py3-none-win_amd64.whl", hash = "sha256:40f79b288b3a667309890885f4cf53371163b7dae17eb17567fb24ab467eca26"},
-    {file = "PyOgg-0.6.14a1.tar.gz", hash = "sha256:8294b34aa59c90200c4630c2cc4a5b84407209141e8e5d069d7a5be358e94262"},
-]
+files = []
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/TeamPyOgg/PyOgg"
+reference = "HEAD"
+resolved_reference = "6871a4f234e8a3a346c4874a12509bfa02c4c63a"
 
 [[package]]
 name = "six"
@@ -268,4 +271,4 @@ six = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7f89c2108d5e2e313be9635f302c76cb1b8f4eab2cc50a0af580e90635313dc6"
+content-hash = "e731aba5147743a2e500d585256d958ee93a4e852da5f0e66caa5feb3fe0c283"
