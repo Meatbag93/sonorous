@@ -57,7 +57,7 @@ class ConfigScreen(wx.Frame):
             id = device.encode()
             self.input_device_ctrl.Append(device.replace(string_to_remove, "", 1), id)
             if (
-                id == self.config.input_device
+                id == self.config.input_device_id
             ):  # It's the selected/default one, so we set selection to it
                 self.input_device_ctrl.SetSelection(index)
         for index, device in enumerate(output_devices):
@@ -66,7 +66,7 @@ class ConfigScreen(wx.Frame):
                 device.replace(string_to_remove, "", 1), id
             )  # For output devices we don't need to encode their names
             if (
-                id == self.config.output_device
+                id == self.config.output_device_id
             ):  # It's the selected/default one, so we set selection to it
                 self.output_device_ctrl.SetSelection(index)
 
@@ -74,10 +74,10 @@ class ConfigScreen(wx.Frame):
         device = self.input_device_ctrl.GetClientData(
             self.input_device_ctrl.GetSelection()
         )
-        self.config.input_device = device
+        self.config.input_device_id = device
 
     def on_output_device_change(self, event):
         device = self.output_device_ctrl.GetClientData(
             self.output_device_ctrl.GetSelection()
         )
-        self.config.output_device = device
+        self.config.output_device_id = device
