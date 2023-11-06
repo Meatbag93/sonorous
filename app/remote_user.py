@@ -30,8 +30,6 @@ class RemoteUser(Thread):
 
     def get_chunk(self):
         chunk = self.chunks.pop()
-        if not self.chunks and not self.buffering:
-            self.buffering = True
         return chunk
 
     def update(self):
