@@ -1,6 +1,6 @@
 import cyal
 import wx
-from . import config
+from . import config, audio_test_dialog
 
 
 class ConfigScreen(wx.Frame):
@@ -33,7 +33,7 @@ class ConfigScreen(wx.Frame):
         tab1.SetSizer(tab1_sizer)
         # Tab 2: Audio Devices
         tab2 = wx.Panel(tabs)
-        tabs.AddPage(tab2, "Audio Devices")
+        tabs.AddPage(tab2, "Sound system")
         tab2_sizer = wx.BoxSizer(wx.VERTICAL)
         input_device_label = wx.StaticText(tab2, label="Input Device:")
         self.input_device_ctrl = wx.Choice(tab2)
@@ -41,10 +41,13 @@ class ConfigScreen(wx.Frame):
         output_device_label = wx.StaticText(tab2, label="Output Device:")
         self.output_device_ctrl = wx.Choice(tab2)
         self.output_device_ctrl.Bind(wx.EVT_CHOICE, self.on_output_device_change)
+        self.test_ctrl = wx.Button(tab2, label="&Test your configuration")
+        self.test_ctrl.Bind(wx.EVT_BUTTON, self.on_test)
         tab2_sizer.Add(input_device_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
         tab2_sizer.Add(self.input_device_ctrl, 1, wx.EXPAND | wx.ALL, 10)
         tab2_sizer.Add(output_device_label, 0, wx.ALIGN_LEFT | wx.ALL, 10)
         tab2_sizer.Add(self.output_device_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+        tab2_sizer.Add(self.test_ctrl)
         tab2.SetSizer(tab2_sizer)
         self.update_devices()
         tabs.SetSelection(0)  # Start with the first tab
@@ -81,3 +84,6 @@ class ConfigScreen(wx.Frame):
             self.output_device_ctrl.GetSelection()
         )
         self.config.output_device_id = device
+    def on_test(self, event):
+        with audio_test_dialog.AudioTestDialog(self, self.config) as dlg:
+            dlg.ShowModal()

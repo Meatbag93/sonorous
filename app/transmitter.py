@@ -5,7 +5,7 @@ from pyogg.opus_encoder import OpusEncoder
 import cyal
 
 
-class transmitter(Thread):
+class Transmitter(Thread):
     """Record and transmit opus frames to a callback"""
 
     def __init__(
@@ -15,6 +15,7 @@ class transmitter(Thread):
         channels: int = 2,
         frame_size: int = 1920,
     ):
+        """Construct a transmitter. You must call destroy to properly dispose of this object, otherwise there will be a memory leak"""
         super().__init__(name="Transmitter-thread", daemon=True)
         self.capture = cyal.CaptureExtension()
         self.frame_size = frame_size
@@ -35,6 +36,7 @@ class transmitter(Thread):
         self.running = True
         self.transmitting = False
         self.buffer = bytearray(frame_size * 2*channels)
+        self.start()
 
     def run(self):
         while self.running:

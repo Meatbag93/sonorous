@@ -9,6 +9,7 @@ class RemoteUser(Thread):
     """Represents another connected user"""
 
     def __init__(self, context: cyal.Context, id: int, display_name: str):
+        """Construct a new RemoteUser. You must call destroy() to dispose of this object otherwise a memory leak happens."""
         super().__init__(name=f"RemoteUser-{id}-{display_name}", daemon=True)
         self.context = context
         self.id = id
