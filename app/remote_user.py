@@ -14,7 +14,7 @@ class RemoteUser(Thread):
         self.id = id
         self.display_name = display_name
         self.chunks = deque(maxlen=3)
-        self.buffering = False
+        self.buffering = True
         self.decoder = OpusDecoder()
         self.decoder.set_sampling_frequency(48000)
         self.decoder.set_channels(2)
