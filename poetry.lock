@@ -211,7 +211,7 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/TeamPyOgg/PyOgg"
+url = "https://github.com/Meatbag93/PyOgg"
 reference = "HEAD"
 resolved_reference = "6871a4f234e8a3a346c4874a12509bfa02c4c63a"
 
@@ -259,4 +259,4 @@ six = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4f13b9df46fcaf07a5b5f0bd7a59843e6ba350ff814360e0014adc06eb0a8599"
+content-hash = "68e2b77babb86c275e7696a029c5caa318f1a5b83ba43a5a8307cf95fdea03a6"
