@@ -37,13 +37,13 @@ class RemoteUser(Thread):
         if self.buffering or not self.chunks:
             return
         with self.lock:
-            chunk = self.get_chunk()
             if self.source.buffers_processed:
                 buffer = self.source.unqueue_buffers(max=1)[0]
             elif self.source.buffers_queued < 3:
                 buffer = self.context.gen_buffer()
             else:
                 return
+            chunk = self.get_chunk()
             buffer.set_data(chunk, sample_rate=48000, format=cyal.BufferFormat.STEREO16)
             self.source.queue_buffers(buffer)
             if self.source.state in [
