@@ -12,6 +12,7 @@ wxpython = "^4.2.1"
 pyogg = {git = "https://github.com/Meatbag93/PyOgg"}
 cyal = "^0.3.2"
 msgpack = "^1.0.7"
+pycryptodome = "^3.19.0"
 
 
 [build-system]
