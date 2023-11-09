@@ -48,7 +48,7 @@ class Transmitter(Thread):
                     if self.device.available_samples >= self.frame_size * self.channels:
                         self.device.capture_samples(self.buffer)
                         encoded = self.encoder.encode(self.buffer)
-                        self.callback(encoded.tobytes())
+                        self.callback(encoded)
                     time.sleep(0.004)
 
     def destroy(self):
