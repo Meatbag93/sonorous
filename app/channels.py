@@ -1,4 +1,4 @@
 # channel constants
-audio=0
-control=1
-chat=2
+audio_out=0
+audio_in=1
+auth=2

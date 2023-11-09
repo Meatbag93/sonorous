@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import Callable
 import wx
@@ -5,14 +6,16 @@ import time
 import msgpack
 import threading
 import enet
+from .session import Session
 from . import structs, timer, channels
 
 
 class ClientState(Enum):
     CONNECTING = 1
-    CONNECTED = 2
-    TIMEOUT = 3
-    DISCONNECTED = 4
+    AUTHENTICATING = 2
+    CONNECTED = 3
+    TIMEOUT = 4
+    DISCONNECTED = 5
 
 
 timeout_time = 5000
@@ -33,10 +36,11 @@ class Client(threading.Thread):
         super().__init__(name="Network-thread", daemon=True)
         self.host = host
         self.port = port
-        self.event_handler = event_handler(self)
+        self.event_handler = event_handler_factory(self)
         self.on_connect = on_connect
         self.on_disconnect = on_disconnect
         self.on_connection_timeout = on_connection_timeout
+        self.session: Session | None = None
         self.timeout_timer = timer.Timer()
         self.address = enet.Address(host.encode(), port)
         self.net = enet.Host(None, 1, 10, 0, 0)
@@ -44,13 +48,19 @@ class Client(threading.Thread):
         self.running = True
         self.should_poll = True  # for pausing and unpausing networking: No events will be processed and nothing would be done unless this is True
         self.state = ClientState.DISCONNECTED
+        self.auth_random_bytes = os.urandom(32)
         self.lock = threading.RLock()
         self.start()
 
     def connect(self):
         with self.lock:
-            if self.state in [ClientState.CONNECTED, ClientState.CONNECTING]:
+            if self.state in [
+                ClientState.CONNECTED,
+                ClientState.AUTHENTICATING,
+                ClientState.CONNECTING,
+            ]:
                 self.disconnect()
+            self.auth_random_bytes = os.urandom(32)
             self.peer = self.net.connect(self.address, 10)
             self.state = ClientState.CONNECTING
 
@@ -62,6 +72,7 @@ class Client(threading.Thread):
                 and self.state
                 in [
                     ClientState.CONNECTED,
+                    ClientState.AUTHENTICATING,
                     ClientState.CONNECTING,
                 ]
             ):
@@ -74,29 +85,58 @@ class Client(threading.Thread):
         with self.lock:
             event = self.net.service(0)
             if event.type == enet.EVENT_TYPE_CONNECT:
-                self.state = ClientState.CONNECTED
-                wx.CallAfter(self.on_connect, self)
+                self.state = ClientState.AUTHENTICATING
+                self.session = None
             elif event.type == enet.EVENT_TYPE_DISCONNECT:
                 self.state = ClientState.DISCONNECTED
                 self.peer = None
+                self.session = None
                 wx.CallAfter(self.on_disconnect, self)
             elif event.type == enet.EVENT_TYPE_RECEIVE:
                 channel = event.channelID
-                if channel == channels.audio:
-                    data = event.packet.data
-                    user_id, seq_number = structs.audio_packet_header.unpack(data[:2])
-                    opus_data = data[2:]
-                    self.event_handler.audio(user_id, seq_number, opus_data)
-                    return
-                data = msgpack.loads(event.packet.data)
-                getattr(self.event_handler, f'event_{data["event"]}')(data["data"])
+                if self.state is ClientState.AUTHENTICATING:
+                    if channel == channels.auth:
+                        data = event.packet.data
+                        if not self.session:
+                            # The servre gave us its public key
+                            self.session = Session(data)
+                            self.peer.send(
+                                channels.auth,
+                                enet.Packet(
+                                    self.session.get_encrypted_aes_key(),
+                                    flags=enet.PACKET_FLAG_RELIABLE,
+                                ),
+                            )
+                            self.peer.send(
+                                channels.auth,
+                                enet.Packet(
+                                    self.session.encrypt(self.auth_random_bytes),
+                                    flags=enet.PACKET_FLAG_RELIABLE,
+                                ),
+                            )
+                        elif data == self.auth_random_bytes:
+                            self.state = ClientState.CONNECTED
+                        else:
+                            return self.disconnect()
+                elif self.state is ClientState.CONNECTED:
+                    data = self.session.decrypt(event.packet.data)
+                    if channel == channels.audio_out:
+                        user_id, seq_number = structs.audio_packet_header.unpack(
+                            data[:2]
+                        )
+                        opus_data = data[2:]
+                        self.event_handler.audio(user_id, seq_number, opus_data)
+                        return
+                    data = msgpack.loads(event.packet.data)
+                    getattr(self.event_handler, f'event_{data["event"]}')(data["data"])
             elif (
-                self.state is ClientState.CONNECTING
+                self.state in [ClientState.CONNECTING, ClientState.AUTHENTICATING]
                 and self.timeout_timer.elapsed >= timeout_time
             ):
                 self.timeout_timer.restart()
                 self.state = ClientState.TIMEOUT
                 self.peer = None
+                self.session = None
                 wx.CallAfter(self.on_connection_timeout, self)
 
     def send(self, channel, event, data=None):
@@ -105,12 +145,12 @@ class Client(threading.Thread):
                 "Attempted sending a packet to a client that is not connected."
             )
         with self.lock:
-            if channel == channels.audio:
+            if channel in [channels.audio_in, channels.audio_out]:
                 raise ValueError("Can't send non-audio packets to audio channel")
             if data is None:
                 data = {}
             packet = enet.Packet(
-                msgpack.dumps({"event": event, "data": data}),
+                self.session.encrypt(msgpack.dumps({"event": event, "data": data})),
                 flags=enet.PACKET_FLAG_RELIABLE,
             )
             self.peer.send(channel, packet)
@@ -121,8 +161,8 @@ class Client(threading.Thread):
                 "Attempted sending a packet to a client that is not connected."
             )
         with self.lock:
-            packet = enet.Packet(audio)
-            self.peer.send(channels.audio, packet)
+            packet = enet.Packet(self.session.encrypt(audio))
+            self.peer.send(channels.audio_in, packet)
 
     def destroy(self):
         self.running = False
@@ -135,6 +175,7 @@ class Client(threading.Thread):
         with self.lock:
             if self.peer is None or self.state not in [
                 ClientState.CONNECTING,
+                ClientState.AUTHENTICATING,
                 ClientState.CONNECTED,
             ]:
                 raise ConnectionError("Attempted to disconnect a disconnected client")
@@ -142,3 +183,5 @@ class Client(threading.Thread):
             self.net.flush()
             self.peer = None
             self.state = ClientState.DISCONNECTED
+            self.session = None
+            wx.CallAfter(self.on_disconnect, self)
